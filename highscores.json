@@ -1,0 +1,46 @@
+{
+  "egg": {
+    "grass": 11,
+    "highway": 10
+  },
+  "blah blah": {
+    "grass": 5,
+    "highway": 0
+  },
+  "brain": {
+    "grass": 137,
+    "highway": 17
+  },
+  "dwg1404": {
+    "grass": 10,
+    "highway": 0
+  },
+  "6": {
+    "grass": 0,
+    "highway": 17
+  },
+  "cowmilker74": {
+    "grass": 14,
+    "highway": 14
+  },
+  "math": {
+    "grass": 4,
+    "highway": 0
+  },
+  "bill": {
+    "grass": 7,
+    "highway": 0
+  },
+  "daniel": {
+    "grass": 25,
+    "highway": 24
+  },
+  "ok": {
+    "grass": 15,
+    "highway": 0
+  },
+  "hen": {
+    "grass": 12,
+    "highway": 0
+  }
+}

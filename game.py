@@ -3,14 +3,14 @@ import math
 import random
 import os
 import json
-
+ 
 # --- makes screen visible - - -
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Police Chase - DRIVE!")
 clock = pygame.time.Clock()
-
+ 
 # Colors for the brain of the code
 WHITE = (255, 255, 255)
 GREEN = (40, 150, 40)
@@ -22,16 +22,19 @@ BLUE = (80, 180, 255)
 BLACK = (0, 0, 0)
 DARK_GRAY = (60, 60, 60)
 LIGHT_GREEN = (60, 180, 60)
-
+ 
 # a data base for fonts needed
 font_large = pygame.font.Font(None, 72)
 font_medium = pygame.font.Font(None, 48)
 font_small = pygame.font.Font(None, 36)
 font_tiny = pygame.font.Font(None, 24)
-
+ 
+# --- ASSET DIRECTORY ---
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+ 
 # --- HIGH SCORE STORAGE ---
 HIGHSCORE_FILE = os.path.join(os.path.dirname(__file__), "highscores.json")
-
+ 
 def load_highscores():
     if os.path.exists(HIGHSCORE_FILE):
         try:
@@ -40,17 +43,17 @@ def load_highscores():
         except Exception:
             return {}
     return {}
-
+ 
 def save_highscores(highscores):
     try:
         with open(HIGHSCORE_FILE, "w", encoding="utf-8") as f:
             json.dump(highscores, f, indent=2)
     except Exception:
         pass
-
+ 
 # --- BACKGROUND IMAGE HELPERS ---
 def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
-    path = os.path.join(os.path.dirname(__file__), name)
+    path = os.path.join(ASSETS_DIR, name)
     if os.path.exists(path):
         try:
             img = pygame.image.load(path).convert()
@@ -60,7 +63,7 @@ def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
             return pygame.transform.scale(img, (WIDTH, HEIGHT)) if scale else img
         except Exception:
             pass
-
+ 
     surf = pygame.Surface(size)
     generator(surf)
     try:
@@ -68,7 +71,7 @@ def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
     except Exception:
         pass
     return pygame.transform.scale(surf, (WIDTH, HEIGHT)) if scale else surf
-
+ 
 # --- GRASS TEXTURE ---
 # NOTE: this texture is saved/loaded as an image file named grass1.png
 def _generate_grass_bg(surf):
@@ -85,16 +88,16 @@ def _generate_grass_bg(surf):
         x = random.randint(0, w - 50)
         y = random.randint(0, h - 50)
         pygame.draw.circle(surf, (20, 100, 20), (x, y), random.randint(10, 30))
-
+ 
 # load the grass tile from file (or create it if missing)
 # grass1.png acts as a repeating tile texture
 GRASS_TILE_SIZE = (200, 200)
 grass_bg = ensure_background_image("grass1.png", _generate_grass_bg, size=GRASS_TILE_SIZE, scale=False)
-
+ 
 # --- ASSET LOADING --- eg car, grass, police car
 def load_asset(name, color):
     try:
-        path = os.path.join(os.path.dirname(__file__), name)
+        path = os.path.join(ASSETS_DIR, name)
         img = pygame.image.load(path).convert_alpha()
         img = pygame.transform.scale(img, (60, 120))
         return pygame.transform.rotate(img, 90)
@@ -102,10 +105,10 @@ def load_asset(name, color):
         surf = pygame.Surface((60, 120), pygame.SRCALPHA)
         surf.fill(color)
         return pygame.transform.rotate(surf, 90)
-
+ 
 car_img = load_asset("carok.png", BLUE)
 police_img = load_asset("policecar.png", RED)
-
+ 
 # --- GAME STATES that define the different screens ---
 class GameState:
     LOGIN = 0
@@ -114,14 +117,14 @@ class GameState:
     PLAYING = 3
     GAME_OVER = 4
     OPTIONS = 5
-
+ 
 current_state = GameState.LOGIN
 username = "" # the username of the current player, used for high score tracking
 selected_level = "grass" #check which level is selected for high score tracking (grass or highway)
 # High score persistence (username -> {level: score})
 highscores = load_highscores()
 current_highscore = 0
-
+ 
 def get_user_scores(name): #stores highscores for each user and level, initializes if new user
     if name not in highscores or not isinstance(highscores[name], dict):
         highscores[name] = {"grass": 0, "highway": 0}
@@ -130,8 +133,8 @@ def get_user_scores(name): #stores highscores for each user and level, initializ
         highscores[name].setdefault("grass", 0)
         highscores[name].setdefault("highway", 0)
     return highscores[name]
-
-
+ 
+ 
 def update_current_highscore(): #if new highscore is achieved, update the high score for the current user and level
     global current_highscore
     if username:
@@ -139,11 +142,11 @@ def update_current_highscore(): #if new highscore is achieved, update the high s
         current_highscore = scores.get(selected_level, 0)
     else:
         current_highscore = 0
-
+ 
 difficulty = 3  # 1-5, default 3 changes police speed, spawn rate, and turn speed due to different difficulty multipliers. Higher difficulty means faster police, more frequent spawns, and sharper turns.
 difficulty_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
 turn_speed_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
-
+ 
 # --- GAME STATE ---
 def reset():
     return {
@@ -152,10 +155,10 @@ def reset():
         "score": 0, "dead": False, "start_time": pygame.time.get_ticks(),
         "spawn_timer": 0, "time_bonus_timer": 0
     }
-
+ 
 g = reset()
 running = True
-
+ 
 # --- INPUT BOX ---
 class InputBox:
     def __init__(self, x, y, w, h):
@@ -174,9 +177,9 @@ class InputBox:
         pygame.draw.rect(surface, WHITE, self.rect, 3)
         text_surf = font_small.render(self.text, True, WHITE)
         surface.blit(text_surf, (self.rect.x + 10, self.rect.y + 10))
-
+ 
 input_box = InputBox(WIDTH//2 - 150, HEIGHT//2 + 50, 300, 60)
-
+ 
 # --- making the main menus and other screens ---
 def draw_login_screen():
     screen.fill(DARK_GRAY)
@@ -188,9 +191,9 @@ def draw_login_screen():
     
     input_box.draw(screen)
     
-    hint = font_tiny.render("Press ENTER to continue", True, GRAY)
+    hint = font_tiny.render("Press ENTER to continue", True, WHITE)
     screen.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT - 50))
-
+ 
 def draw_main_menu():
     screen.fill(DARK_GRAY)
     title = font_large.render("POLICE CHASE", True, ORANGE)
@@ -216,7 +219,7 @@ def draw_level_select():
     screen.fill(DARK_GRAY)
     title = font_large.render("SELECT LEVEL", True, ORANGE)
     screen.blit(title, (WIDTH//2 - title.get_width()//2, 50))
-
+ 
     # Display high score for both maps
     scores = get_user_scores(username) if username else {"grass": 0, "highway": 0}
     grass_score_text = font_small.render(f"Grass High Score: {scores.get('grass', 0)}", True, WHITE)
@@ -230,7 +233,7 @@ def draw_level_select():
     pygame.draw.rect(screen, WHITE, grass_rect, 3)
     grass_text = font_medium.render("GRASSY LAND", True, WHITE)
     screen.blit(grass_text, (grass_rect.centerx - grass_text.get_width()//2, grass_rect.y + 30))
-    click_text = font_tiny.render("Press 1", True, GRAY)
+    click_text = font_tiny.render("Press 1", True, WHITE)
     screen.blit(click_text, (grass_rect.centerx - click_text.get_width()//2, grass_rect.y + 100))
     
     # puts player in the Highway Level and draws it
@@ -239,14 +242,14 @@ def draw_level_select():
     pygame.draw.rect(screen, WHITE, highway_rect, 3)
     highway_text = font_medium.render("HIGHWAY", True, WHITE)
     screen.blit(highway_text, (highway_rect.centerx - highway_text.get_width()//2, highway_rect.y + 30))
-    click_text = font_tiny.render("Press 2", True, GRAY)
+    click_text = font_tiny.render("Press 2", True, WHITE)
     screen.blit(click_text, (highway_rect.centerx - click_text.get_width()//2, highway_rect.y + 100))
     #tells player how to navigate screens
-    back_text = font_tiny.render("Press M to return to menu", True, GRAY)
+    back_text = font_tiny.render("Press M to return to menu", True, WHITE)
     screen.blit(back_text, (WIDTH//2 - back_text.get_width()//2, HEIGHT - 50))
     
     return grass_rect, highway_rect
-
+ 
 def draw_options():
     screen.fill(DARK_GRAY)
     title = font_large.render("OPTIONS", True, ORANGE)
@@ -273,16 +276,16 @@ def draw_options():
         screen.blit(text, (WIDTH//2 - text.get_width()//2, y_pos))
         y_pos += 40
     #shows player what to press
-    hint = font_tiny.render("Press 1-5 to change difficulty", True, GRAY)
+    hint = font_tiny.render("Press 1-5 to change difficulty", True, WHITE)
     screen.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT - 80))
-    #tells player how to navigate screens
-    back_text = font_tiny.render("Press M to return to menu", True, GRAY)
+    #tells player how to naigate screens
+    back_text = font_tiny.render("Press M to return to menu", True, WHITE)
     screen.blit(back_text, (WIDTH//2 - back_text.get_width()//2, HEIGHT - 50))
-
+ 
 def draw_game():
     def world_to_screen(wx, wy):
         return wx - g["x"] + WIDTH//2, wy - g["y"] + HEIGHT//2
-
+ 
     if selected_level == "grass":
         # Tile the grass image background and move with the player
         tile_w, tile_h = grass_bg.get_size()
@@ -291,7 +294,7 @@ def draw_game():
         for ix in range(-1, WIDTH // tile_w + 2):
             for iy in range(-1, HEIGHT // tile_h + 2):
                 screen.blit(grass_bg, (ix * tile_w - offset_x, iy * tile_h - offset_y))
-
+ 
         # No road on grass level: grass-only background
     else:
         # Highway: solid grass sides, road is part of the world and scrolls
@@ -320,7 +323,7 @@ def draw_game():
     for p in g["police"]:
         img = pygame.transform.rotate(police_img, -p["angle"])
         screen.blit(img, img.get_rect(center=(p["x"] - g["x"] + WIDTH//2, p["y"] - g["y"] + HEIGHT//2)))
-
+ 
     # Draw arrows for off-screen police that face them
     for p in g["police"]:
         px = p["x"] - g["x"] + WIDTH//2
@@ -343,15 +346,15 @@ def draw_game():
             right = angle - math.pi * 0.75
             pygame.draw.line(screen, RED, (tip_x, tip_y), (tip_x + math.cos(left) * 12, tip_y + math.sin(left) * 12), 3)
             pygame.draw.line(screen, RED, (tip_x, tip_y), (tip_x + math.cos(right) * 12, tip_y + math.sin(right) * 12), 3)
-
+ 
     # Draw Players car
     p_img = pygame.transform.rotate(car_img, -g["angle"])
     screen.blit(p_img, p_img.get_rect(center=(WIDTH//2, HEIGHT//2)))
-
+ 
     # Draw Username above player car (pure white)
     username_text = font_small.render(username, True, WHITE)
     screen.blit(username_text, (WIDTH//2 - username_text.get_width()//2, HEIGHT//2 - 80))
-
+ 
     # Draw Explosions when police cars colide
     for exp in g["explosions"][:]:
         exp["t"] -= 1
@@ -361,7 +364,7 @@ def draw_game():
             size = int(30 * (1 - exp["t"] / 20))
             pygame.draw.circle(screen, ORANGE, (int(exp["x"] - g["x"] + WIDTH//2), 
                                                int(exp["y"] - g["y"] + HEIGHT//2)), size)
-
+ 
     # Draw UI elements: Time, Score, Difficulty
     elapsed = (pygame.time.get_ticks() - g["start_time"]) // 1000
     time_text = font_small.render(f"TIME: {elapsed}s", True, WHITE)
@@ -390,7 +393,7 @@ def draw_game_over():
     #tells player how to play again
     replay_text = font_small.render("Press R to Replay or M for Menu", True, ORANGE)
     screen.blit(replay_text, (WIDTH//2 - replay_text.get_width()//2, HEIGHT - 80))
-
+ 
 # --- MAIN LOOP ---
 while running:
     clock.tick(60)
@@ -452,7 +455,7 @@ while running:
                     current_state = GameState.PLAYING
                 elif event.key == pygame.K_m:
                     current_state = GameState.MAIN_MENU
-
+ 
     # GAME LOGIC
     if current_state == GameState.PLAYING and not g["dead"]:
         keys = pygame.key.get_pressed()
@@ -463,12 +466,12 @@ while running:
         speed = 5 * difficulty_multiplier[difficulty]
         g["x"] += math.cos(math.radians(g["angle"])) * speed
         g["y"] += math.sin(math.radians(g["angle"])) * speed
-
+ 
         # Time Bonus (points every 5 seconds) 
         if now - g["time_bonus_timer"] > 5000:
             g["score"] += 1
             g["time_bonus_timer"] = now
-
+ 
         # Spawn Police every 3 seconds (adjusted by difficulty)
         spawn_rate = 3000 / difficulty_multiplier[difficulty]
         if now - g["spawn_timer"] > spawn_rate:
@@ -477,7 +480,7 @@ while running:
             spawn_y = g["y"] + math.sin(math.radians(side_angle)) * 500
             g["police"].append({"x": spawn_x, "y": spawn_y, "angle": 0})
             g["spawn_timer"] = now
-
+ 
         # Police AI & Collision/ driving
         for p in g["police"][:]:
             dx, dy = g["x"] - p["x"], g["y"] - p["y"]
@@ -500,7 +503,7 @@ while running:
                         scores[selected_level] = g["score"]
                         current_highscore = g["score"]
                         save_highscores(highscores)
-
+ 
         # Police hitting each other: remove any cluster of 2+ cars
         threshold = 30
         n = len(g["police"])
@@ -512,7 +515,7 @@ while running:
                 if math.hypot(p1["x"] - p2["x"], p1["y"] - p2["y"]) < threshold:
                     adj[i].append(j)
                     adj[j].append(i)
-
+ 
         visited = [False] * n
         to_remove = set()
         for i in range(n):
@@ -537,12 +540,12 @@ while running:
                         g["explosions"].append({"x": p["x"], "y": p["y"], "t": 20})
                         to_remove.add(idx)
                 g["score"] += len(group)
-
+ 
         # Remove police in reverse order to avoid index issues
         for idx in sorted(to_remove, reverse=True):
             if idx < len(g["police"]):
                 g["police"].pop(idx)
-
+ 
     # --- DRAWING the buttons
     if current_state == GameState.LOGIN:
         draw_login_screen()
@@ -556,7 +559,7 @@ while running:
         draw_game()
     elif current_state == GameState.GAME_OVER:
         draw_game_over()
-
+ 
     pygame.display.flip()
-
+ 
 pygame.quit()

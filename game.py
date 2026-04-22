@@ -107,6 +107,8 @@ username = ""
 selected_level = "grass"
 highscores = load_highscores()
 current_highscore = 0
+# COMMIT 4: track whether we arrived at login via "Change User" or fresh start
+login_context = "new"   # "new" or "change"
  
 def get_user_scores(name):
     if name not in highscores or not isinstance(highscores[name], dict):
@@ -174,9 +176,13 @@ class InputBox:
  
 input_box = InputBox(WIDTH//2 - 150, HEIGHT//2 + 50, 300, 60)
  
+# COMMIT 4: login screen title changes based on context
 def draw_login_screen():
     screen.fill(DARK_GRAY)
-    title = font_large.render("POLICE CHASE", True, ORANGE)
+    if login_context == "change":
+        title = font_large.render("CHANGE USER", True, LIGHT_GREEN)
+    else:
+        title = font_large.render("POLICE CHASE", True, ORANGE)
     screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
     prompt = font_medium.render("Enter Username:", True, WHITE)
     screen.blit(prompt, (WIDTH//2 - prompt.get_width()//2, HEIGHT//2 - 100))
@@ -361,6 +367,8 @@ while running:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and len(input_box.text) > 0:
                     username = input_box.text
+                    # COMMIT 4: reset context to "new" once a name is confirmed
+                    login_context = "new"
                     update_current_highscore()
                     current_state = GameState.MAIN_MENU
                 else:
@@ -374,7 +382,8 @@ while running:
                 elif event.key == pygame.K_3:
                     running = False
                 elif event.key == pygame.K_4:
-                    # COMMIT 3: clear the input box so the field is blank for the new name
+                    # COMMIT 4: set context to "change" before going to login
+                    login_context = "change"
                     input_box.text = ""
                     current_state = GameState.LOGIN
         elif current_state == GameState.LEVEL_SELECT:

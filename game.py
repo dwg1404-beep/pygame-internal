@@ -1,6 +1,3 @@
-
-Copy
-
 import pygame
 import math
 import random
@@ -153,10 +150,9 @@ def reset():
  
 def spawn_obstacles(game_state, count=15):
     if selected_level == "grass":
-        color = (80, 50, 20)       # dark brown rocks
+        color = (80, 50, 20)
     else:
-        color = (255, 100, 0)      # orange highway cones
- 
+        color = (255, 100, 0)
     for _ in range(count):
         ox = random.randint(-2000, 2000)
         oy = random.randint(-2000, 2000)
@@ -208,12 +204,15 @@ def draw_main_menu():
     welcome = font_small.render(f"Welcome, {username}!", True, LIGHT_GREEN)
     screen.blit(welcome, (WIDTH//2 - welcome.get_width()//2, 150))
     play_text = font_medium.render("1. PLAY", True, WHITE)
-    screen.blit(play_text, (WIDTH//2 - play_text.get_width()//2, 250))
+    screen.blit(play_text, (WIDTH//2 - play_text.get_width()//2, 230))
     options_text = font_medium.render("2. OPTIONS", True, WHITE)
-    screen.blit(options_text, (WIDTH//2 - options_text.get_width()//2, 330))
+    screen.blit(options_text, (WIDTH//2 - options_text.get_width()//2, 300))
     quit_text = font_medium.render("3. QUIT", True, WHITE)
-    screen.blit(quit_text, (WIDTH//2 - quit_text.get_width()//2, 410))
-    hint = font_tiny.render("Press 1, 2, or 3", True, WHITE)
+    screen.blit(quit_text, (WIDTH//2 - quit_text.get_width()//2, 370))
+    # COMMIT 1: new menu option displayed
+    change_text = font_medium.render("4. CHANGE USER", True, LIGHT_GREEN)
+    screen.blit(change_text, (WIDTH//2 - change_text.get_width()//2, 440))
+    hint = font_tiny.render("Press 1, 2, 3, or 4", True, WHITE)
     screen.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT - 50))
  
 def draw_level_select():
@@ -299,7 +298,6 @@ def draw_game():
             pygame.draw.rect(screen, ORANGE, (road_x_screen, 0, 6, HEIGHT))
             pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, 0, 6, HEIGHT))
  
-    # Draw obstacles using their stored per-level colour
     for obs in g["obstacles"]:
         ox, oy = world_to_screen(obs["x"], obs["y"])
         pygame.draw.circle(screen, obs["color"], (int(ox), int(oy)), obs["size"])
@@ -338,7 +336,7 @@ def draw_game():
             g["explosions"].remove(exp)
         else:
             size = int(30 * (1 - exp["t"] / 20))
-            pygame.draw.circle(screen, ORANGE, (int(exp["x"] - g["x"] + WIDTH//2), 
+            pygame.draw.circle(screen, ORANGE, (int(exp["x"] - g["x"] + WIDTH//2),
                                                int(exp["y"] - g["y"] + HEIGHT//2)), size)
  
     elapsed = (pygame.time.get_ticks() - g["start_time"]) // 1000
@@ -348,7 +346,6 @@ def draw_game():
     screen.blit(score_surf, (20, 70))
     difficulty_text = font_tiny.render(f"DIFFICULTY: {difficulty}", True, ORANGE)
     screen.blit(difficulty_text, (20, 120))
-    # COMMIT 5: live obstacle counter on HUD
     obs_text = font_tiny.render(f"OBSTACLES: {len(g['obstacles'])}", True, BROWN)
     screen.blit(obs_text, (20, 145))
  
@@ -372,7 +369,7 @@ while running:
     now = pygame.time.get_ticks()
     
     for event in pygame.event.get():
-        if event.type == pygame.QUIT: 
+        if event.type == pygame.QUIT:
             running = False
         if current_state == GameState.LOGIN:
             if event.type == pygame.KEYDOWN:
@@ -390,6 +387,7 @@ while running:
                     current_state = GameState.OPTIONS
                 elif event.key == pygame.K_3:
                     running = False
+                # COMMIT 1: key 4 not yet handled - added in commit 2
         elif current_state == GameState.LEVEL_SELECT:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
@@ -433,7 +431,6 @@ while running:
         g["x"] += math.cos(math.radians(g["angle"])) * speed
         g["y"] += math.sin(math.radians(g["angle"])) * speed
  
-        # Player-obstacle collision
         for obs in g["obstacles"]:
             if math.hypot(g["x"] - obs["x"], g["y"] - obs["y"]) < obs["size"] + 20:
                 g["dead"] = True
@@ -467,7 +464,6 @@ while running:
             p["x"] += math.cos(math.radians(p["angle"])) * police_speed
             p["y"] += math.sin(math.radians(p["angle"])) * police_speed
  
-            # Police-obstacle collision
             hit_obs = False
             for obs in g["obstacles"]:
                 if math.hypot(p["x"] - obs["x"], p["y"] - obs["y"]) < obs["size"] + 18:

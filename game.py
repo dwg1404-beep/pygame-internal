@@ -21,6 +21,10 @@ BLUE = (80, 180, 255)
 BLACK = (0, 0, 0)
 DARK_GRAY = (60, 60, 60)
 LIGHT_GREEN = (60, 180, 60)
+# dim version of white used for arrow keys when not pressed
+KEY_OFF = (80, 80, 80)
+# bright version used when the key is held down
+KEY_ON = (255, 255, 255)
  
 font_large = pygame.font.Font(None, 72)
 font_medium = pygame.font.Font(None, 48)
@@ -160,6 +164,49 @@ def spawn_obstacles(game_state, count=15):
             continue
         size = random.randint(18, 30)
         game_state["obstacles"].append({"x": ox, "y": oy, "size": size, "color": color})
+ 
+# draws the left/right arrow key widgets in the bottom right corner
+# each arrow is a filled triangle that goes bright white when its key is held
+def draw_arrow_keys(keys):
+    # anchor point for the whole widget, bottom right of screen
+    base_x = WIDTH - 160
+    base_y = HEIGHT - 60
+ 
+    # --- left arrow ---
+    # sits to the left of centre in the widget
+    left_cx = base_x
+    left_cy = base_y
+    left_color = KEY_ON if keys[pygame.K_LEFT] else KEY_OFF
+ 
+    # triangle pointing left: tip on the left, flat edge on the right
+    left_points = [
+        (left_cx - 28, left_cy),        # tip (leftmost point)
+        (left_cx + 12, left_cy - 22),   # top right corner
+        (left_cx + 12, left_cy + 22),   # bottom right corner
+    ]
+    pygame.draw.polygon(screen, left_color, left_points)
+    # thin border so the shape reads clearly on any background
+    pygame.draw.polygon(screen, BLACK, left_points, 2)
+ 
+    # small label so players know what the widget is
+    label = font_tiny.render("TURN", True, (120, 120, 120))
+    screen.blit(label, (base_x + 18, base_y - 8))
+ 
+    # --- right arrow ---
+    # sits to the right of centre, mirrored version of the left one
+    right_cx = base_x + 110
+    right_cy = base_y
+    right_color = KEY_ON if keys[pygame.K_RIGHT] else KEY_OFF
+ 
+    # triangle pointing right: tip on the right, flat edge on the left
+    right_points = [
+        (right_cx + 28, right_cy),       # tip (rightmost point)
+        (right_cx - 12, right_cy - 22),  # top left corner
+        (right_cx - 12, right_cy + 22),  # bottom left corner
+    ]
+    pygame.draw.polygon(screen, right_color, right_points)
+    pygame.draw.polygon(screen, BLACK, right_points, 2)
+ 
  
 g = reset()
 spawn_obstacles(g)
@@ -364,6 +411,10 @@ def draw_game():
     screen.blit(difficulty_text, (20, 120))
     obs_text = font_tiny.render(f"OBSTACLES: {len(g['obstacles'])}", True, BROWN)
     screen.blit(obs_text, (20, 145))
+ 
+    # read which keys are held right now and pass to the arrow widget
+    keys = pygame.key.get_pressed()
+    draw_arrow_keys(keys)
  
 def draw_game_over():
     screen.fill(DARK_GRAY)

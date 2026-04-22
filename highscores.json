@@ -50,5 +50,13 @@
   "j": {
     "grass": 3,
     "highway": 0
+  },
+  "ehh": {
+    "grass": 0,
+    "highway": 0
+  },
+  "jono": {
+    "grass": 22,
+    "highway": 17
   }
 }

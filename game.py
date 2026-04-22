@@ -1,3 +1,6 @@
+
+Copy
+
 import pygame
 import math
 import random
@@ -148,7 +151,6 @@ def reset():
         "spawn_timer": 0, "time_bonus_timer": 0
     }
  
-# COMMIT 4: obstacle colour is now level-dependent, stored per obstacle
 def spawn_obstacles(game_state, count=15):
     if selected_level == "grass":
         color = (80, 50, 20)       # dark brown rocks
@@ -297,7 +299,7 @@ def draw_game():
             pygame.draw.rect(screen, ORANGE, (road_x_screen, 0, 6, HEIGHT))
             pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, 0, 6, HEIGHT))
  
-    # COMMIT 4: Draw obstacles using their stored per-level colour
+    # Draw obstacles using their stored per-level colour
     for obs in g["obstacles"]:
         ox, oy = world_to_screen(obs["x"], obs["y"])
         pygame.draw.circle(screen, obs["color"], (int(ox), int(oy)), obs["size"])
@@ -346,6 +348,9 @@ def draw_game():
     screen.blit(score_surf, (20, 70))
     difficulty_text = font_tiny.render(f"DIFFICULTY: {difficulty}", True, ORANGE)
     screen.blit(difficulty_text, (20, 120))
+    # COMMIT 5: live obstacle counter on HUD
+    obs_text = font_tiny.render(f"OBSTACLES: {len(g['obstacles'])}", True, BROWN)
+    screen.blit(obs_text, (20, 145))
  
 def draw_game_over():
     screen.fill(DARK_GRAY)

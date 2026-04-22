@@ -107,7 +107,6 @@ username = ""
 selected_level = "grass"
 highscores = load_highscores()
 current_highscore = 0
-# COMMIT 4: track whether we arrived at login via "Change User" or fresh start
 login_context = "new"   # "new" or "change"
  
 def get_user_scores(name):
@@ -176,14 +175,18 @@ class InputBox:
  
 input_box = InputBox(WIDTH//2 - 150, HEIGHT//2 + 50, 300, 60)
  
-# COMMIT 4: login screen title changes based on context
 def draw_login_screen():
     screen.fill(DARK_GRAY)
     if login_context == "change":
         title = font_large.render("CHANGE USER", True, LIGHT_GREEN)
+        screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
+        # COMMIT 5: show who is currently logged in as a hint
+        if username:
+            logged_in_text = font_tiny.render(f"Logged in as: {username}", True, ORANGE)
+            screen.blit(logged_in_text, (WIDTH//2 - logged_in_text.get_width()//2, 165))
     else:
         title = font_large.render("POLICE CHASE", True, ORANGE)
-    screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
+        screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
     prompt = font_medium.render("Enter Username:", True, WHITE)
     screen.blit(prompt, (WIDTH//2 - prompt.get_width()//2, HEIGHT//2 - 100))
     input_box.draw(screen)
@@ -367,7 +370,6 @@ while running:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and len(input_box.text) > 0:
                     username = input_box.text
-                    # COMMIT 4: reset context to "new" once a name is confirmed
                     login_context = "new"
                     update_current_highscore()
                     current_state = GameState.MAIN_MENU
@@ -382,7 +384,6 @@ while running:
                 elif event.key == pygame.K_3:
                     running = False
                 elif event.key == pygame.K_4:
-                    # COMMIT 4: set context to "change" before going to login
                     login_context = "change"
                     input_box.text = ""
                     current_state = GameState.LOGIN

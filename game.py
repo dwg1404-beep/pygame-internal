@@ -422,7 +422,7 @@ while running:
         g["x"] += math.cos(math.radians(g["angle"])) * speed
         g["y"] += math.sin(math.radians(g["angle"])) * speed
  
-        # COMMIT 2: Player dies on obstacle collision
+        # Player-obstacle collision
         for obs in g["obstacles"]:
             if math.hypot(g["x"] - obs["x"], g["y"] - obs["y"]) < obs["size"] + 20:
                 g["dead"] = True
@@ -455,6 +455,18 @@ while running:
             police_speed = 5.5 * difficulty_multiplier[difficulty]
             p["x"] += math.cos(math.radians(p["angle"])) * police_speed
             p["y"] += math.sin(math.radians(p["angle"])) * police_speed
+ 
+            # COMMIT 3: Police explode when they hit an obstacle
+            hit_obs = False
+            for obs in g["obstacles"]:
+                if math.hypot(p["x"] - obs["x"], p["y"] - obs["y"]) < obs["size"] + 18:
+                    g["explosions"].append({"x": p["x"], "y": p["y"], "t": 20})
+                    g["score"] += 1
+                    g["police"].remove(p)
+                    hit_obs = True
+                    break
+            if hit_obs:
+                continue
             
             if math.hypot(g["x"] - p["x"], g["y"] - p["y"]) < 35:
                 g["dead"] = True

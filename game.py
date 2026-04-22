@@ -4,13 +4,13 @@ import random
 import os
 import json
  
-# --- makes screen visible - - -
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Police Chase - DRIVE!")
 clock = pygame.time.Clock()
  
+# basic colours used everywhere
 WHITE = (255, 255, 255)
 GREEN = (40, 150, 40)
 BROWN = (101, 67, 33)
@@ -27,6 +27,7 @@ font_medium = pygame.font.Font(None, 48)
 font_small = pygame.font.Font(None, 36)
 font_tiny = pygame.font.Font(None, 24)
  
+# where the car/police images live
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 HIGHSCORE_FILE = os.path.join(os.path.dirname(__file__), "highscores.json")
  
@@ -64,6 +65,7 @@ def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
         pass
     return pygame.transform.scale(surf, (WIDTH, HEIGHT)) if scale else surf
  
+# draws grass blades and dark patches so it doesnt look flat
 def _generate_grass_bg(surf):
     w, h = surf.get_size()
     surf.fill(GREEN)
@@ -77,9 +79,11 @@ def _generate_grass_bg(surf):
         y = random.randint(0, h - 50)
         pygame.draw.circle(surf, (20, 100, 20), (x, y), random.randint(10, 30))
  
+# tile is 200x200 and gets repeated across the screen while you drive
 GRASS_TILE_SIZE = (200, 200)
 grass_bg = ensure_background_image("grass1.png", _generate_grass_bg, size=GRASS_TILE_SIZE, scale=False)
  
+# tries to load the image file, falls back to a coloured rectangle if missing
 def load_asset(name, color):
     try:
         path = os.path.join(ASSETS_DIR, name)
@@ -94,6 +98,7 @@ def load_asset(name, color):
 car_img = load_asset("carok.png", BLUE)
 police_img = load_asset("policecar.png", RED)
  
+# numbers for each screen so we can switch between them
 class GameState:
     LOGIN = 0
     MAIN_MENU = 1
@@ -107,9 +112,10 @@ username = ""
 selected_level = "grass"
 highscores = load_highscores()
 current_highscore = 0
-login_context = "new"   # "new" or "change"
+login_context = "new"  # "new" on first launch, "change" when swapping users
  
 def get_user_scores(name):
+    # create a blank entry if this username hasnt played before
     if name not in highscores or not isinstance(highscores[name], dict):
         highscores[name] = {"grass": 0, "highway": 0}
     else:
@@ -125,11 +131,12 @@ def update_current_highscore():
     else:
         current_highscore = 0
  
-difficulty = 3
+difficulty = 3  # default is medium
 difficulty_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
 turn_speed_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
  
 def reset():
+    # fresh game state, called at start and on replay
     return {
         "x": 0, "y": 0, "angle": 0,
         "police": [], "explosions": [],
@@ -139,13 +146,16 @@ def reset():
     }
  
 def spawn_obstacles(game_state, count=15):
+    # pick colour based on which level is loaded
     if selected_level == "grass":
-        color = (80, 50, 20)
+        color = (80, 50, 20)   # dark brown rocks
     else:
-        color = (255, 100, 0)
+        color = (255, 100, 0)  # orange cones
+ 
     for _ in range(count):
         ox = random.randint(-2000, 2000)
         oy = random.randint(-2000, 2000)
+        # dont spawn right on top of the player start position
         if math.hypot(ox, oy) < 200:
             continue
         size = random.randint(18, 30)
@@ -160,14 +170,14 @@ class InputBox:
         self.rect = pygame.Rect(x, y, w, h)
         self.text = ""
         self.active = True
-    
+ 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE:
                 self.text = self.text[:-1]
             elif event.unicode.isprintable() and len(self.text) < 20:
                 self.text += event.unicode
-    
+ 
     def draw(self, surface):
         pygame.draw.rect(surface, WHITE, self.rect, 3)
         text_surf = font_small.render(self.text, True, WHITE)
@@ -177,10 +187,10 @@ input_box = InputBox(WIDTH//2 - 150, HEIGHT//2 + 50, 300, 60)
  
 def draw_login_screen():
     screen.fill(DARK_GRAY)
+    # title changes depending on whether player is switching accounts or logging in fresh
     if login_context == "change":
         title = font_large.render("CHANGE USER", True, LIGHT_GREEN)
         screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
-        # COMMIT 5: show who is currently logged in as a hint
         if username:
             logged_in_text = font_tiny.render(f"Logged in as: {username}", True, ORANGE)
             screen.blit(logged_in_text, (WIDTH//2 - logged_in_text.get_width()//2, 165))
@@ -214,6 +224,7 @@ def draw_level_select():
     screen.fill(DARK_GRAY)
     title = font_large.render("SELECT LEVEL", True, ORANGE)
     screen.blit(title, (WIDTH//2 - title.get_width()//2, 50))
+    # pull scores for this user so we can show them on screen
     scores = get_user_scores(username) if username else {"grass": 0, "highway": 0}
     grass_score_text = font_small.render(f"Grass High Score: {scores.get('grass', 0)}", True, WHITE)
     highway_score_text = font_small.render(f"Highway High Score: {scores.get('highway', 0)}", True, WHITE)
@@ -254,6 +265,7 @@ def draw_options():
     screen.blit(current_diff_text, (WIDTH//2 - current_diff_text.get_width()//2, 190))
     y_pos = 260
     for num, name, color in difficulties:
+        # << markers show which one is selected
         marker = "<<" if num == difficulty else "  "
         text = font_tiny.render(f"{marker} {num}. {name} {marker}", True, color)
         screen.blit(text, (WIDTH//2 - text.get_width()//2, y_pos))
@@ -264,10 +276,12 @@ def draw_options():
     screen.blit(back_text, (WIDTH//2 - back_text.get_width()//2, HEIGHT - 50))
  
 def draw_game():
+    # converts world position to where it should appear on screen
     def world_to_screen(wx, wy):
         return wx - g["x"] + WIDTH//2, wy - g["y"] + HEIGHT//2
  
     if selected_level == "grass":
+        # tile the grass so it scrolls without a visible edge
         tile_w, tile_h = grass_bg.get_size()
         offset_x = int(g["x"]) % tile_w
         offset_y = int(g["y"]) % tile_h
@@ -278,6 +292,7 @@ def draw_game():
         screen.fill(GREEN)
         road_width = 400
         road_x_world = -road_width // 2
+        # draw a few road copies side by side so you cant drive off the edge easily
         repeat_count = 3
         for i in range(-repeat_count, repeat_count + 1):
             segment_x_world = road_x_world + i * (road_width + 200)
@@ -288,11 +303,13 @@ def draw_game():
             for j in range(1, lane_count):
                 lane_x_world = segment_x_world + j * lane_width
                 lane_x_screen, _ = world_to_screen(lane_x_world, 0)
+                # offset by player y so the dashes look like theyre moving
                 for y in range(0, HEIGHT, 40):
                     pygame.draw.rect(screen, WHITE, (lane_x_screen - 2, y + (g["y"] % 40), 4, 20))
             pygame.draw.rect(screen, ORANGE, (road_x_screen, 0, 6, HEIGHT))
             pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, 0, 6, HEIGHT))
  
+    # draw rocks or cones
     for obs in g["obstacles"]:
         ox, oy = world_to_screen(obs["x"], obs["y"])
         pygame.draw.circle(screen, obs["color"], (int(ox), int(oy)), obs["size"])
@@ -301,6 +318,7 @@ def draw_game():
         img = pygame.transform.rotate(police_img, -p["angle"])
         screen.blit(img, img.get_rect(center=(p["x"] - g["x"] + WIDTH//2, p["y"] - g["y"] + HEIGHT//2)))
  
+    # red arrows point at cops that are off screen
     for p in g["police"]:
         px = p["x"] - g["x"] + WIDTH//2
         py = p["y"] - g["y"] + HEIGHT//2
@@ -319,12 +337,14 @@ def draw_game():
             pygame.draw.line(screen, RED, (tip_x, tip_y), (tip_x + math.cos(left) * 12, tip_y + math.sin(left) * 12), 3)
             pygame.draw.line(screen, RED, (tip_x, tip_y), (tip_x + math.cos(right) * 12, tip_y + math.sin(right) * 12), 3)
  
+    # player is always drawn at the centre of the screen
     p_img = pygame.transform.rotate(car_img, -g["angle"])
     screen.blit(p_img, p_img.get_rect(center=(WIDTH//2, HEIGHT//2)))
  
     username_text = font_small.render(username, True, WHITE)
     screen.blit(username_text, (WIDTH//2 - username_text.get_width()//2, HEIGHT//2 - 80))
  
+    # shrink the explosion circle over time until it disappears
     for exp in g["explosions"][:]:
         exp["t"] -= 1
         if exp["t"] <= 0:
@@ -334,6 +354,7 @@ def draw_game():
             pygame.draw.circle(screen, ORANGE, (int(exp["x"] - g["x"] + WIDTH//2),
                                                int(exp["y"] - g["y"] + HEIGHT//2)), size)
  
+    # top left HUD
     elapsed = (pygame.time.get_ticks() - g["start_time"]) // 1000
     time_text = font_small.render(f"TIME: {elapsed}s", True, WHITE)
     screen.blit(time_text, (20, 20))
@@ -348,6 +369,7 @@ def draw_game_over():
     screen.fill(DARK_GRAY)
     over_text = font_large.render("BUSTED!", True, RED)
     screen.blit(over_text, (WIDTH//2 - over_text.get_width()//2, 80))
+    # use end_time so the clock doesnt keep going after death
     elapsed = (g["end_time"] - g["start_time"]) // 1000
     time_text = font_medium.render(f"Time: {elapsed}s", True, WHITE)
     screen.blit(time_text, (WIDTH//2 - time_text.get_width()//2, 200))
@@ -358,11 +380,11 @@ def draw_game_over():
     replay_text = font_small.render("Press R to Replay or M for Menu", True, ORANGE)
     screen.blit(replay_text, (WIDTH//2 - replay_text.get_width()//2, HEIGHT - 80))
  
-# --- MAIN LOOP ---
+# --- main loop ---
 while running:
     clock.tick(60)
     now = pygame.time.get_ticks()
-    
+ 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -384,6 +406,7 @@ while running:
                 elif event.key == pygame.K_3:
                     running = False
                 elif event.key == pygame.K_4:
+                    # clear the box so the old name doesnt show up
                     login_context = "change"
                     input_box.text = ""
                     current_state = GameState.LOGIN
@@ -425,11 +448,12 @@ while running:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]: g["angle"] -= 4 * turn_speed_multiplier[difficulty]
         if keys[pygame.K_RIGHT]: g["angle"] += 4 * turn_speed_multiplier[difficulty]
-        
+ 
         speed = 5 * difficulty_multiplier[difficulty]
         g["x"] += math.cos(math.radians(g["angle"])) * speed
         g["y"] += math.sin(math.radians(g["angle"])) * speed
  
+        # check if player drove into a rock/cone
         for obs in g["obstacles"]:
             if math.hypot(g["x"] - obs["x"], g["y"] - obs["y"]) < obs["size"] + 20:
                 g["dead"] = True
@@ -443,10 +467,12 @@ while running:
                         save_highscores(highscores)
                 break
  
+        # give a point every 5 seconds for staying alive
         if now - g["time_bonus_timer"] > 5000:
             g["score"] += 1
             g["time_bonus_timer"] = now
  
+        # spawn a new cop every few seconds, faster on higher difficulties
         spawn_rate = 3000 / difficulty_multiplier[difficulty]
         if now - g["spawn_timer"] > spawn_rate:
             side_angle = random.uniform(0, 360)
@@ -456,6 +482,7 @@ while running:
             g["spawn_timer"] = now
  
         for p in g["police"][:]:
+            # steer the cop toward the player each frame
             dx, dy = g["x"] - p["x"], g["y"] - p["y"]
             target = math.degrees(math.atan2(dy, dx))
             p["angle"] += ((target - p["angle"] + 180) % 360 - 180) * 0.04
@@ -463,6 +490,7 @@ while running:
             p["x"] += math.cos(math.radians(p["angle"])) * police_speed
             p["y"] += math.sin(math.radians(p["angle"])) * police_speed
  
+            # cop hits an obstacle and blows up, player gets a point
             hit_obs = False
             for obs in g["obstacles"]:
                 if math.hypot(p["x"] - obs["x"], p["y"] - obs["y"]) < obs["size"] + 18:
@@ -473,7 +501,8 @@ while running:
                     break
             if hit_obs:
                 continue
-            
+ 
+            # cop touches player, game over
             if math.hypot(g["x"] - p["x"], g["y"] - p["y"]) < 35:
                 g["dead"] = True
                 g["end_time"] = pygame.time.get_ticks()
@@ -486,6 +515,7 @@ while running:
                         current_highscore = g["score"]
                         save_highscores(highscores)
  
+        # find groups of cops that have crashed into each other
         threshold = 30
         n = len(g["police"])
         adj = [[] for _ in range(n)]
@@ -497,6 +527,7 @@ while running:
                     adj[i].append(j)
                     adj[j].append(i)
  
+        # flood fill to find connected groups, then remove them all
         visited = [False] * n
         to_remove = set()
         for i in range(n):
@@ -521,6 +552,7 @@ while running:
                         to_remove.add(idx)
                 g["score"] += len(group)
  
+        # remove in reverse so indices dont shift
         for idx in sorted(to_remove, reverse=True):
             if idx < len(g["police"]):
                 g["police"].pop(idx)

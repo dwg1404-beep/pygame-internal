@@ -148,14 +148,20 @@ def reset():
         "spawn_timer": 0, "time_bonus_timer": 0
     }
  
+# COMMIT 4: obstacle colour is now level-dependent, stored per obstacle
 def spawn_obstacles(game_state, count=15):
+    if selected_level == "grass":
+        color = (80, 50, 20)       # dark brown rocks
+    else:
+        color = (255, 100, 0)      # orange highway cones
+ 
     for _ in range(count):
         ox = random.randint(-2000, 2000)
         oy = random.randint(-2000, 2000)
         if math.hypot(ox, oy) < 200:
             continue
         size = random.randint(18, 30)
-        game_state["obstacles"].append({"x": ox, "y": oy, "size": size})
+        game_state["obstacles"].append({"x": ox, "y": oy, "size": size, "color": color})
  
 g = reset()
 spawn_obstacles(g)
@@ -291,10 +297,10 @@ def draw_game():
             pygame.draw.rect(screen, ORANGE, (road_x_screen, 0, 6, HEIGHT))
             pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, 0, 6, HEIGHT))
  
-    # Draw obstacles
+    # COMMIT 4: Draw obstacles using their stored per-level colour
     for obs in g["obstacles"]:
         ox, oy = world_to_screen(obs["x"], obs["y"])
-        pygame.draw.circle(screen, BROWN, (int(ox), int(oy)), obs["size"])
+        pygame.draw.circle(screen, obs["color"], (int(ox), int(oy)), obs["size"])
  
     for p in g["police"]:
         img = pygame.transform.rotate(police_img, -p["angle"])
@@ -456,7 +462,7 @@ while running:
             p["x"] += math.cos(math.radians(p["angle"])) * police_speed
             p["y"] += math.sin(math.radians(p["angle"])) * police_speed
  
-            # COMMIT 3: Police explode when they hit an obstacle
+            # Police-obstacle collision
             hit_obs = False
             for obs in g["obstacles"]:
                 if math.hypot(p["x"] - obs["x"], p["y"] - obs["y"]) < obs["size"] + 18:

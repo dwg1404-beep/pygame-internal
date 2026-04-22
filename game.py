@@ -11,7 +11,6 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Police Chase - DRIVE!")
 clock = pygame.time.Clock()
  
-# Colors for the brain of the code
 WHITE = (255, 255, 255)
 GREEN = (40, 150, 40)
 BROWN = (101, 67, 33)
@@ -374,8 +373,9 @@ while running:
                     current_state = GameState.OPTIONS
                 elif event.key == pygame.K_3:
                     running = False
-                # COMMIT 2: pressing 4 sends player back to the login screen
                 elif event.key == pygame.K_4:
+                    # COMMIT 3: clear the input box so the field is blank for the new name
+                    input_box.text = ""
                     current_state = GameState.LOGIN
         elif current_state == GameState.LEVEL_SELECT:
             if event.type == pygame.KEYDOWN:

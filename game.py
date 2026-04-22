@@ -23,16 +23,12 @@ BLACK = (0, 0, 0)
 DARK_GRAY = (60, 60, 60)
 LIGHT_GREEN = (60, 180, 60)
  
-# a data base for fonts needed
 font_large = pygame.font.Font(None, 72)
 font_medium = pygame.font.Font(None, 48)
 font_small = pygame.font.Font(None, 36)
 font_tiny = pygame.font.Font(None, 24)
  
-# --- ASSET DIRECTORY ---
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
- 
-# --- HIGH SCORE STORAGE ---
 HIGHSCORE_FILE = os.path.join(os.path.dirname(__file__), "highscores.json")
  
 def load_highscores():
@@ -51,7 +47,6 @@ def save_highscores(highscores):
     except Exception:
         pass
  
-# --- BACKGROUND IMAGE HELPERS ---
 def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
     path = os.path.join(ASSETS_DIR, name)
     if os.path.exists(path):
@@ -62,7 +57,6 @@ def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
             return pygame.transform.scale(img, (WIDTH, HEIGHT)) if scale else img
         except Exception:
             pass
- 
     surf = pygame.Surface(size)
     generator(surf)
     try:
@@ -71,7 +65,6 @@ def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
         pass
     return pygame.transform.scale(surf, (WIDTH, HEIGHT)) if scale else surf
  
-# --- GRASS TEXTURE ---
 def _generate_grass_bg(surf):
     w, h = surf.get_size()
     surf.fill(GREEN)
@@ -88,7 +81,6 @@ def _generate_grass_bg(surf):
 GRASS_TILE_SIZE = (200, 200)
 grass_bg = ensure_background_image("grass1.png", _generate_grass_bg, size=GRASS_TILE_SIZE, scale=False)
  
-# --- ASSET LOADING ---
 def load_asset(name, color):
     try:
         path = os.path.join(ASSETS_DIR, name)
@@ -103,7 +95,6 @@ def load_asset(name, color):
 car_img = load_asset("carok.png", BLUE)
 police_img = load_asset("policecar.png", RED)
  
-# --- GAME STATES ---
 class GameState:
     LOGIN = 0
     MAIN_MENU = 1
@@ -138,7 +129,6 @@ difficulty = 3
 difficulty_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
 turn_speed_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
  
-# --- GAME STATE ---
 def reset():
     return {
         "x": 0, "y": 0, "angle": 0,
@@ -165,7 +155,6 @@ g = reset()
 spawn_obstacles(g)
 running = True
  
-# --- INPUT BOX ---
 class InputBox:
     def __init__(self, x, y, w, h):
         self.rect = pygame.Rect(x, y, w, h)
@@ -186,7 +175,6 @@ class InputBox:
  
 input_box = InputBox(WIDTH//2 - 150, HEIGHT//2 + 50, 300, 60)
  
-# --- SCREENS ---
 def draw_login_screen():
     screen.fill(DARK_GRAY)
     title = font_large.render("POLICE CHASE", True, ORANGE)
@@ -209,7 +197,6 @@ def draw_main_menu():
     screen.blit(options_text, (WIDTH//2 - options_text.get_width()//2, 300))
     quit_text = font_medium.render("3. QUIT", True, WHITE)
     screen.blit(quit_text, (WIDTH//2 - quit_text.get_width()//2, 370))
-    # COMMIT 1: new menu option displayed
     change_text = font_medium.render("4. CHANGE USER", True, LIGHT_GREEN)
     screen.blit(change_text, (WIDTH//2 - change_text.get_width()//2, 440))
     hint = font_tiny.render("Press 1, 2, 3, or 4", True, WHITE)
@@ -387,7 +374,9 @@ while running:
                     current_state = GameState.OPTIONS
                 elif event.key == pygame.K_3:
                     running = False
-                # COMMIT 1: key 4 not yet handled - added in commit 2
+                # COMMIT 2: pressing 4 sends player back to the login screen
+                elif event.key == pygame.K_4:
+                    current_state = GameState.LOGIN
         elif current_state == GameState.LEVEL_SELECT:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:

@@ -72,23 +72,19 @@ def ensure_background_image(name, generator, size=(WIDTH, HEIGHT), scale=True):
     return pygame.transform.scale(surf, (WIDTH, HEIGHT)) if scale else surf
  
 # --- GRASS TEXTURE ---
-# NOTE: this texture is saved/loaded as an image file named grass1.png
 def _generate_grass_bg(surf):
     w, h = surf.get_size()
     surf.fill(GREEN)
-    # Create grass detail
     for _ in range(1200):
         x = random.randint(0, w)
         y = random.randint(0, h)
         grass_color = random.choice([(30, 130, 30), (35, 145, 35), (25, 120, 25), (60, 180, 60)])
         pygame.draw.line(surf, grass_color, (x, y), (x + random.randint(1, 3), y + random.randint(2, 5)), 1)
-    # Add some darker patches for variation
     for _ in range(60):
         x = random.randint(0, w - 50)
         y = random.randint(0, h - 50)
         pygame.draw.circle(surf, (20, 100, 20), (x, y), random.randint(10, 30))
  
-# load the grass tile from file (or create it if missing)
 GRASS_TILE_SIZE = (200, 200)
 grass_bg = ensure_background_image("grass1.png", _generate_grass_bg, size=GRASS_TILE_SIZE, scale=False)
  
@@ -142,28 +138,27 @@ difficulty = 3
 difficulty_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
 turn_speed_multiplier = {1: 0.5, 2: 0.75, 3: 1.0, 4: 1.25, 5: 1.5}
  
-# --- COMMIT 1: Spawn obstacles in the world ---
-def spawn_obstacles(game_state, count=15):
-    for _ in range(count):
-        ox = random.randint(-2000, 2000)
-        oy = random.randint(-2000, 2000)
-        if math.hypot(ox, oy) < 200:
-            continue  # keep spawn zone clear
-        size = random.randint(18, 30)
-        game_state["obstacles"].append({"x": ox, "y": oy, "size": size})
- 
 # --- GAME STATE ---
 def reset():
     return {
         "x": 0, "y": 0, "angle": 0,
         "police": [], "explosions": [],
-        "obstacles": [],  # COMMIT 1: added obstacles list
+        "obstacles": [],
         "score": 0, "dead": False, "start_time": pygame.time.get_ticks(),
         "spawn_timer": 0, "time_bonus_timer": 0
     }
  
+def spawn_obstacles(game_state, count=15):
+    for _ in range(count):
+        ox = random.randint(-2000, 2000)
+        oy = random.randint(-2000, 2000)
+        if math.hypot(ox, oy) < 200:
+            continue
+        size = random.randint(18, 30)
+        game_state["obstacles"].append({"x": ox, "y": oy, "size": size})
+ 
 g = reset()
-spawn_obstacles(g)  # COMMIT 1: spawn on start
+spawn_obstacles(g)
 running = True
  
 # --- INPUT BOX ---
@@ -187,7 +182,7 @@ class InputBox:
  
 input_box = InputBox(WIDTH//2 - 150, HEIGHT//2 + 50, 300, 60)
  
-# --- SCREEN DRAWING FUNCTIONS ---
+# --- SCREENS ---
 def draw_login_screen():
     screen.fill(DARK_GRAY)
     title = font_large.render("POLICE CHASE", True, ORANGE)
@@ -296,17 +291,15 @@ def draw_game():
             pygame.draw.rect(screen, ORANGE, (road_x_screen, 0, 6, HEIGHT))
             pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, 0, 6, HEIGHT))
  
-    # COMMIT 1: Draw obstacles
+    # Draw obstacles
     for obs in g["obstacles"]:
         ox, oy = world_to_screen(obs["x"], obs["y"])
         pygame.draw.circle(screen, BROWN, (int(ox), int(oy)), obs["size"])
  
-    # Draw Police cars
     for p in g["police"]:
         img = pygame.transform.rotate(police_img, -p["angle"])
         screen.blit(img, img.get_rect(center=(p["x"] - g["x"] + WIDTH//2, p["y"] - g["y"] + HEIGHT//2)))
  
-    # Draw arrows for off-screen police
     for p in g["police"]:
         px = p["x"] - g["x"] + WIDTH//2
         py = p["y"] - g["y"] + HEIGHT//2
@@ -325,25 +318,21 @@ def draw_game():
             pygame.draw.line(screen, RED, (tip_x, tip_y), (tip_x + math.cos(left) * 12, tip_y + math.sin(left) * 12), 3)
             pygame.draw.line(screen, RED, (tip_x, tip_y), (tip_x + math.cos(right) * 12, tip_y + math.sin(right) * 12), 3)
  
-    # Draw player car
     p_img = pygame.transform.rotate(car_img, -g["angle"])
     screen.blit(p_img, p_img.get_rect(center=(WIDTH//2, HEIGHT//2)))
  
-    # Draw username above player
     username_text = font_small.render(username, True, WHITE)
     screen.blit(username_text, (WIDTH//2 - username_text.get_width()//2, HEIGHT//2 - 80))
  
-    # Draw explosions
     for exp in g["explosions"][:]:
         exp["t"] -= 1
         if exp["t"] <= 0:
             g["explosions"].remove(exp)
         else:
             size = int(30 * (1 - exp["t"] / 20))
-            pygame.draw.circle(screen, ORANGE, (int(exp["x"] - g["x"] + WIDTH//2),
+            pygame.draw.circle(screen, ORANGE, (int(exp["x"] - g["x"] + WIDTH//2), 
                                                int(exp["y"] - g["y"] + HEIGHT//2)), size)
  
-    # Draw UI
     elapsed = (pygame.time.get_ticks() - g["start_time"]) // 1000
     time_text = font_small.render(f"TIME: {elapsed}s", True, WHITE)
     screen.blit(time_text, (20, 20))
@@ -372,7 +361,7 @@ while running:
     now = pygame.time.get_ticks()
     
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT: 
             running = False
         if current_state == GameState.LOGIN:
             if event.type == pygame.KEYDOWN:
@@ -396,13 +385,13 @@ while running:
                     selected_level = "grass"
                     update_current_highscore()
                     g = reset()
-                    spawn_obstacles(g)  # COMMIT 1: spawn on level select
+                    spawn_obstacles(g)
                     current_state = GameState.PLAYING
                 elif event.key == pygame.K_2:
                     selected_level = "highway"
                     update_current_highscore()
                     g = reset()
-                    spawn_obstacles(g)  # COMMIT 1: spawn on level select
+                    spawn_obstacles(g)
                     current_state = GameState.PLAYING
                 elif event.key == pygame.K_m:
                     current_state = GameState.MAIN_MENU
@@ -419,12 +408,11 @@ while running:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     g = reset()
-                    spawn_obstacles(g)  # COMMIT 1: spawn on replay
+                    spawn_obstacles(g)
                     current_state = GameState.PLAYING
                 elif event.key == pygame.K_m:
                     current_state = GameState.MAIN_MENU
  
-    # GAME LOGIC
     if current_state == GameState.PLAYING and not g["dead"]:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]: g["angle"] -= 4 * turn_speed_multiplier[difficulty]
@@ -433,6 +421,20 @@ while running:
         speed = 5 * difficulty_multiplier[difficulty]
         g["x"] += math.cos(math.radians(g["angle"])) * speed
         g["y"] += math.sin(math.radians(g["angle"])) * speed
+ 
+        # COMMIT 2: Player dies on obstacle collision
+        for obs in g["obstacles"]:
+            if math.hypot(g["x"] - obs["x"], g["y"] - obs["y"]) < obs["size"] + 20:
+                g["dead"] = True
+                g["end_time"] = pygame.time.get_ticks()
+                current_state = GameState.GAME_OVER
+                if username:
+                    scores = get_user_scores(username)
+                    if g["score"] > scores.get(selected_level, 0):
+                        scores[selected_level] = g["score"]
+                        current_highscore = g["score"]
+                        save_highscores(highscores)
+                break
  
         if now - g["time_bonus_timer"] > 5000:
             g["score"] += 1
@@ -505,7 +507,6 @@ while running:
             if idx < len(g["police"]):
                 g["police"].pop(idx)
  
-    # DRAWING
     if current_state == GameState.LOGIN:
         draw_login_screen()
     elif current_state == GameState.MAIN_MENU:

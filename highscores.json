@@ -58,5 +58,21 @@
   "jono": {
     "grass": 22,
     "highway": 17
+  },
+  ".": {
+    "grass": 1,
+    "highway": 0
+  },
+  "atticus": {
+    "grass": 0,
+    "highway": 0
+  },
+  "thebigmill": {
+    "grass": 9,
+    "highway": 11
+  },
+  "youknow": {
+    "grass": 13,
+    "highway": 0
   }
 }

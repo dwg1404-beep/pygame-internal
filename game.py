@@ -149,18 +149,29 @@ def reset():
         "spawn_timer": 0, "time_bonus_timer": 0
     }
  
-def spawn_obstacles(game_state, count=15):
+def spawn_obstacles(game_state, count=35):
     # pick colour based on which level is loaded
     if selected_level == "grass":
         color = (80, 50, 20)   # dark brown rocks
     else:
         color = (255, 100, 0)  # orange cones
  
+    # first wave - spread around the normal play area
     for _ in range(count):
         ox = random.randint(-2000, 2000)
         oy = random.randint(-2000, 2000)
         # dont spawn right on top of the player start position
         if math.hypot(ox, oy) < 200:
+            continue
+        size = random.randint(18, 30)
+        game_state["obstacles"].append({"x": ox, "y": oy, "size": size, "color": color})
+ 
+    # second wave - further out so theres stuff waiting when you drive far
+    for _ in range(25):
+        ox = random.randint(-5000, 5000)
+        oy = random.randint(-5000, 5000)
+        # only place these in the outer ring, not overlapping the first wave area
+        if math.hypot(ox, oy) < 2200:
             continue
         size = random.randint(18, 30)
         game_state["obstacles"].append({"x": ox, "y": oy, "size": size, "color": color})

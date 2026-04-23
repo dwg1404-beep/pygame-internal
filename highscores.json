@@ -44,8 +44,8 @@
     "highway": 0
   },
   "test": {
-    "grass": 12,
-    "highway": 1
+    "grass": 16,
+    "highway": 20
   },
   "j": {
     "grass": 3,

@@ -165,7 +165,7 @@ def spawn_obstacles(game_state, count=35):
             continue
         size = random.randint(18, 30)
         game_state["obstacles"].append({"x": ox, "y": oy, "size": size, "color": color})
- 
+
     # second wave - further out so theres stuff waiting when you drive far
     for _ in range(25):
         ox = random.randint(-5000, 5000)
@@ -182,13 +182,13 @@ def draw_arrow_keys(keys):
     # anchor point for the whole widget, bottom right of screen
     base_x = WIDTH - 160
     base_y = HEIGHT - 60
- 
+
     # --- left arrow ---
     # sits to the left of centre in the widget
     left_cx = base_x
     left_cy = base_y
     left_color = KEY_ON if keys[pygame.K_LEFT] else KEY_OFF
- 
+
     # triangle pointing left: tip on the left, flat edge on the right
     left_points = [
         (left_cx - 28, left_cy),        # tip (leftmost point)
@@ -198,17 +198,17 @@ def draw_arrow_keys(keys):
     pygame.draw.polygon(screen, left_color, left_points)
     # thin border so the shape reads clearly on any background
     pygame.draw.polygon(screen, BLACK, left_points, 2)
- 
+
     # small label so players know what the widget is
     label = font_tiny.render("TURN", True, (120, 120, 120))
     screen.blit(label, (base_x + 18, base_y - 8))
- 
+
     # --- right arrow ---
     # sits to the right of centre, mirrored version of the left one
     right_cx = base_x + 110
     right_cy = base_y
     right_color = KEY_ON if keys[pygame.K_RIGHT] else KEY_OFF
- 
+
     # triangle pointing right: tip on the right, flat edge on the left
     right_points = [
         (right_cx + 28, right_cy),       # tip (rightmost point)
@@ -217,7 +217,7 @@ def draw_arrow_keys(keys):
     ]
     pygame.draw.polygon(screen, right_color, right_points)
     pygame.draw.polygon(screen, BLACK, right_points, 2)
- 
+
  
 g = reset()
 spawn_obstacles(g)
@@ -347,25 +347,26 @@ def draw_game():
             for iy in range(-1, HEIGHT // tile_h + 2):
                 screen.blit(grass_bg, (ix * tile_w - offset_x, iy * tile_h - offset_y))
     else:
+        # grass fills the whole screen first, road sits on top in world space
         screen.fill(GREEN)
         road_width = 400
-        road_x_world = -road_width // 2
-        # draw a few road copies side by side so you cant drive off the edge easily
-        repeat_count = 3
-        for i in range(-repeat_count, repeat_count + 1):
-            segment_x_world = road_x_world + i * (road_width + 200)
-            road_x_screen, _ = world_to_screen(segment_x_world, 0)
-            pygame.draw.rect(screen, DARK_GRAY, (road_x_screen, 0, road_width, HEIGHT))
-            lane_count = 3
-            lane_width = road_width // lane_count
-            for j in range(1, lane_count):
-                lane_x_world = segment_x_world + j * lane_width
-                lane_x_screen, _ = world_to_screen(lane_x_world, 0)
-                # offset by player y so the dashes look like theyre moving
-                for y in range(0, HEIGHT, 40):
-                    pygame.draw.rect(screen, WHITE, (lane_x_screen - 2, y + (g["y"] % 40), 4, 20))
-            pygame.draw.rect(screen, ORANGE, (road_x_screen, 0, 6, HEIGHT))
-            pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, 0, 6, HEIGHT))
+        # road lives at world x=0, convert to screen so it stays put as you drive
+        road_x_screen, _ = world_to_screen(-road_width // 2, 0)
+        # road is very tall so you dont see the ends when driving up and down
+        road_height = 6000
+        road_y_screen, _ = world_to_screen(0, -road_height // 2)
+        _, road_y_screen = world_to_screen(0, -road_height // 2)
+        pygame.draw.rect(screen, DARK_GRAY, (road_x_screen, road_y_screen, road_width, road_height))
+        # lane dividers drawn in world space so they dont scroll
+        lane_count = 3
+        lane_width = road_width // lane_count
+        for j in range(1, lane_count):
+            lane_x_screen = road_x_screen + j * lane_width
+            for y in range(0, road_height, 40):
+                pygame.draw.rect(screen, WHITE, (lane_x_screen - 2, road_y_screen + y, 4, 20))
+        # orange kerb edges
+        pygame.draw.rect(screen, ORANGE, (road_x_screen, road_y_screen, 6, road_height))
+        pygame.draw.rect(screen, ORANGE, (road_x_screen + road_width - 6, road_y_screen, 6, road_height))
  
     # draw rocks or cones
     for obs in g["obstacles"]:
@@ -422,7 +423,7 @@ def draw_game():
     screen.blit(difficulty_text, (20, 120))
     obs_text = font_tiny.render(f"OBSTACLES: {len(g['obstacles'])}", True, BROWN)
     screen.blit(obs_text, (20, 145))
- 
+
     # read which keys are held right now and pass to the arrow widget
     keys = pygame.key.get_pressed()
     draw_arrow_keys(keys)

@@ -29,3 +29,7 @@ If the project later needs a package such as requests, you would install it like
 ```
 pip install pygame-ce
 ```
+
+To run it press ctrl, fn and f5
+
+this was made with the help of ai 

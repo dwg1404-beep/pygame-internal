@@ -34,6 +34,43 @@ font_tiny = pygame.font.Font(None, 24)
 # where the car/police images live
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 HIGHSCORE_FILE = os.path.join(os.path.dirname(__file__), "highscores.json")
+
+# tries common audio extensions until one loads, returns None if nothing found
+def load_sound(name):
+    for ext in [".wav", ".mp3", ".ogg"]:
+        path = os.path.join(ASSETS_DIR, name + ext)
+        if os.path.exists(path):
+            try:
+                return pygame.mixer.Sound(path)
+            except Exception:
+                pass
+    return None
+
+def load_music(name):
+    for ext in [".wav", ".mp3", ".ogg"]:
+        path = os.path.join(ASSETS_DIR, name + ext)
+        if os.path.exists(path):
+            return path
+    return None
+
+# load all three sounds, each can be None if the file is missing
+snd_engine = load_sound("engine")
+snd_siren  = load_sound("siren")
+music_path = load_music("music")
+
+# lower the volume a bit so nothing is too loud
+if snd_engine: snd_engine.set_volume(0.4)
+if snd_siren:  snd_siren.set_volume(0.5)
+
+# start background music looping straight away
+if music_path:
+    pygame.mixer.music.load(music_path)
+    pygame.mixer.music.set_volume(0.3)
+    pygame.mixer.music.play(-1)  # -1 means loop forever
+
+# track which sounds are currently playing so we dont restart them every frame
+engine_playing = False
+siren_playing  = False
  
 def load_highscores():
     if os.path.exists(HIGHSCORE_FILE):
@@ -507,6 +544,38 @@ while running:
                 elif event.key == pygame.K_m:
                     current_state = GameState.MAIN_MENU
  
+    # handle engine and siren sounds each frame
+    if current_state == GameState.PLAYING and not g["dead"]:
+        # engine runs whenever the player is alive and playing
+        if snd_engine and not engine_playing:
+            snd_engine.play(-1)  # loop until stopped
+            engine_playing = True
+    else:
+        # stop engine when not playing or dead
+        if snd_engine and engine_playing:
+            snd_engine.stop()
+            engine_playing = False
+
+    if current_state == GameState.PLAYING and not g["dead"]:
+        # check if any police car is visible on screen right now
+        police_on_screen = any(
+            0 <= p["x"] - g["x"] + WIDTH//2 <= WIDTH and
+            0 <= p["y"] - g["y"] + HEIGHT//2 <= HEIGHT
+            for p in g["police"]
+        )
+        if snd_siren:
+            if police_on_screen and not siren_playing:
+                snd_siren.play(-1)  # loop siren while cops are visible
+                siren_playing = True
+            elif not police_on_screen and siren_playing:
+                snd_siren.stop()
+                siren_playing = False
+    else:
+        # no cops to worry about off the play screen
+        if snd_siren and siren_playing:
+            snd_siren.stop()
+            siren_playing = False
+
     if current_state == GameState.PLAYING and not g["dead"]:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]: g["angle"] -= 4 * turn_speed_multiplier[difficulty]

@@ -74,5 +74,25 @@
   "youknow": {
     "grass": 13,
     "highway": 0
+  },
+  "fox": {
+    "grass": 26,
+    "highway": 0
+  },
+  "dafdsk": {
+    "grass": 8,
+    "highway": 3
+  },
+  "the real sigma67": {
+    "grass": 10,
+    "highway": 16
+  },
+  "henry": {
+    "grass": 5,
+    "highway": 0
+  },
+  "atp": {
+    "grass": 1,
+    "highway": 28
   }
 }
